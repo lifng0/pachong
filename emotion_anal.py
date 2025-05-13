@@ -21,7 +21,7 @@ def emotion(filmname):
         is_positive = 1 if positive_probs >= negative_probs else 0
         print(is_positive,positive_probs,negative_probs)
         key_list = ['is_positive','positive_probs','negative_probs']
-        value = {'is_positive':is_positive,format(positive_probs,'.4f'):positive_probs,'negative_probs':format(negative_probs,'.4f')}
+        value = {'is_positive':is_positive,'positive_probs':format(positive_probs,'.4f'),'negative_probs':format(negative_probs,'.4f')}
         emotion_lib.append(value)
     with open(f'{filmname}_emotion.json', 'w', encoding='utf-8') as f:
         json.dump(emotion_lib, f, ensure_ascii=False, indent=4)
