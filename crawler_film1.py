@@ -3,7 +3,6 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import json
 
-from crawler_film import film_name
 
 headers = {
     'user-agent':
@@ -17,7 +16,6 @@ def crawler(film_id):
     for page in range(pages):
         url = base_url + str(page * 20)
         resp = requests.get(url, headers=headers)
-        print(resp.status_code)
         bs = BeautifulSoup(resp.text, 'html.parser')
         film_name = bs.h1.get_text()
         # time.sleep(random.uniform(1,2))
@@ -48,6 +46,7 @@ def crawler(film_id):
                 'comment_popular': comment_popular
             }
             comment_lib.append(comment)
+    print(f"成功爬取id为{film_id}的影评")
+    return comment_lib
 
-    with open(f'{film_id}.json', 'w', encoding='utf-8') as f:
-        json.dump(comment_lib, f, ensure_ascii=False, indent=4)
+    

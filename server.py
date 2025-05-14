@@ -2,6 +2,8 @@ from sanic import Sanic, response
 from sanic.response import html, json as sanic_json
 from package import package_results
 from draw_picture import generate_visuals
+from emotion_anal import emotion
+from crawler_film1 import crawler
 import os
 import json
 import time
@@ -63,7 +65,7 @@ async def process_movie(request,movie_id):
         return sanic_json({"status":"success","massage":"数据已经存在，跳过爬取过程","name":movie_data[0]["film_name"]})
     else:
         try:
-            movie_data = [
+            '''movie_data = [
         {   
             "film_name" : "三体",
             "book_id": "6518605",
@@ -134,7 +136,8 @@ async def process_movie(request,movie_id):
             "comment_rating": 5,
             "comment_content": "2022年底，三体电视剧开播之前看完了全三部，感觉今后每一次抬头看星空都仿佛看见命运的齿轮在暗夜里一直缓缓转动，从古到今从未停止过。",
             "comment_isuseful": 0
-        }]
+        }]'''
+            movie_data = crawler(movie_id)
             name = movie_data[0]["film_name"]
             with open(f"{DATA_DIR}/movie/comment/{movie_id}.json","w") as f:
                 json.dump(movie_data,f)
@@ -151,15 +154,8 @@ async def movie_emotion(request,movie_id):
         if os.path.exists(f"{DATA_DIR}/movie/comment/{movie_id}.json"):
             with open(f"{DATA_DIR}/movie/comment/{movie_id}.json") as f:
                 comment = json.load(f)
-            positive = sum(1 for r in comment["reviews"] if r["rating"] >=4 )
-            total = len(comment["reviews"])
-            analysis = {
-                "id": movie_id,
-                "positive_rate": f"{(positive/total)*100:.1f}%",
-                "avg_rating": sum(r["rating"] for r in comment["reviews"]) / total,
-                "hot_score": total * 2.5  # 模拟热度计算
-            }
-            with open(f'{DATA_DIR}/movie/emotion/{movie_id}.json',"w"):
+                analysis = emotion(comment)
+            with open(f'{DATA_DIR}/movie/emotion/{movie_id}.json',"w") as f:
                 json.dump(analysis, f)
             cleanup_old_files(f"{DATA_DIR}/movie/emotion/")
             return sanic_json({"status":"success","massage":"分析已经完成"})
