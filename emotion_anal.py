@@ -26,3 +26,4 @@ def emotion(filmname):
     with open(f'{filmname}_emotion.json', 'w', encoding='utf-8') as f:
         json.dump(emotion_lib, f, ensure_ascii=False, indent=4)
 emotion('肖申克的救赎')
+print(1)

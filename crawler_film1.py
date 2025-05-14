@@ -51,4 +51,3 @@ def crawler(film_id):
 
     with open(f'{film_id}.json', 'w', encoding='utf-8') as f:
         json.dump(comment_lib, f, ensure_ascii=False, indent=4)
-crawler(1292722)

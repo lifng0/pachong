@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>分析结果展示</title>
+    <style>
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 2rem;
+        }
+
+        .carousel-container {
+            position: relative;
+            width: 90%;
+            max-width: 900px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .carousel-track {
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .carousel-slide {
+            min-width: 100%;
+            scroll-snap-align: center;
+        }
+
+        .carousel-slide img {
+            width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .buttons {
+            margin-top: 1rem;
+        }
+
+        .nav-button {
+            padding: 0.6rem 1.2rem;
+            margin: 0 1rem;
+            font-size: 1rem;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .nav-button:hover {
+            background-color: #0056b3;
+        }
+
+        .download {
+            margin-top: 2rem;
+        }
+
+        .download a {
+            text-decoration: none;
+        }
+
+        .download button {
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+
+        .download button:hover {
+            background: #004a99;
+        }
+    </style>
+</head>
+<body>
+    <h1>分析结果图表</h1>
+    <div class="title" id="Title"></div>
+
+    <div class="carousel-container">
+        <div class="carousel-track" id="carouselTrack">
+            <div class="carousel-slide"><img id="pieChart" src="" alt="好评率饼图"></div>
+            <div class="carousel-slide"><img id="wordCloud" src="" alt="关键词云图"></div>
+            <div class="carousel-slide"><img id="barChart" src="" alt="评论柱状图"></div>
+            <div class="carousel-slide"><img id="starChart" src="" alt="星级分布图"></div>
+        </div>
+    </div>
+
+    <div class="buttons">
+        <button class="nav-button" onclick="prevSlide()">⬅ 上一张</button>
+        <button class="nav-button" onclick="nextSlide()">下一张 ➡</button>
+    </div>
+
+    <div class="download">
+        <a id="downloadLink" href="">
+            <button>📦 下载全部分析结果</button>
+        </a>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const item_id = urlParams.get('id');
+        const mode = urlParams.get('mode');
+        const Name = urlParams.get('name')
+        title = document.getElementById('Title')
+
+        if (Name) {
+            title.textContent = `正在分析：${Name}`;
+            title.style.fontSize = "24px"
+        }else{
+            alert("缺少name参数");
+        }
+
+        if (item_id && mode) {
+            document.getElementById('pieChart').src = `/static/visuals/${mode}/${item_id}/pie.png`;
+            document.getElementById('wordCloud').src = `/static/visuals/${mode}/${item_id}/wordcloud.png`;
+            document.getElementById('barChart').src = `/static/visuals/${mode}/${item_id}/bar.png`;
+            document.getElementById('starChart').src = `/static/visuals/${mode}/${item_id}/star.png`;
+            document.getElementById("downloadLink").href = `/download/${mode}/${item_id}/${Name}`;
+        } else {
+            alert("缺少必要的查询参数：mode 或 id");
+        }
+
+        let currentIndex = 0;
+        const track = document.getElementById('carouselTrack');
+        const slides = document.querySelectorAll('.carousel-slide');
+
+        function updateCarousel() {
+            const offset = -currentIndex * 100;
+            track.style.transform = `translateX(${offset}%)`;
+        }
+
+        function prevSlide() {
+            currentIndex = (currentIndex - 1 + slides.length) % slides.length;
+            updateCarousel();
+        }
+
+        function nextSlide() {
+            currentIndex = (currentIndex + 1) % slides.length;
+            updateCarousel();
+        }
+    </script>
+</body>
+</html>
