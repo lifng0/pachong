@@ -1,5 +1,6 @@
 from sanic import Sanic, response
 from sanic.response import html, json as sanic_json
+from sanic.exceptions import SanicException
 from package import package_results
 from draw_picture import generate_visuals
 from emotion_anal import emotion
@@ -12,6 +13,7 @@ import glob
 app = Sanic("MovieAnalysis")
 app.static("/static", "./static")
 
+MAX_FILE_SIZE = 10 * 1024 * 1024
 MAX_FILES = 50
 DATA_DIR = "./data"
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -42,6 +44,7 @@ def clean_old_files(base_path='static/visuals',mode = "movie", expire_seconds=86
                 os.remove(full_path)
                 print(f"[清理] 删除了过期压缩包: {full_path}")
 
+
 def cleanup_old_files(location:str):
     files = glob.glob(os.path.join(location,"*.json"))
     files.sort(key=lambda x: os.path.getmtime(x))
@@ -65,78 +68,6 @@ async def process_movie(request,movie_id):
         return sanic_json({"status":"success","massage":"数据已经存在，跳过爬取过程","name":movie_data[0]["film_name"]})
     else:
         try:
-            '''movie_data = [
-        {   
-            "film_name" : "三体",
-            "book_id": "6518605",
-            "comment_id": "3678666406",
-            "comment_username": "世明",
-            "comment_timestamp": 1675433363,
-            "comment_location": "天津",
-            "comment_rating": 5,
-            "comment_content": "我感觉读完三体我不是我了",
-            "comment_isuseful": 0
-        },
-        {
-            "book_id": "6518605",
-            "comment_id": "3678524581",
-            "comment_username": "上善若水",
-            "comment_timestamp": 1675427550,
-            "comment_location": "湖北",
-            "comment_rating": 5,
-            "comment_content": "不谈宇宙的宏观与生命体的微小，光是人性的善与恶就足够深刻的体会。",
-            "comment_isuseful": 0
-        },
-        {
-            "book_id": "6518605",
-            "comment_id": "3678485751",
-            "comment_username": "有序度在降低",
-            "comment_timestamp": 1675425657,
-            "comment_location": "山东",
-            "comment_rating": 5,
-            "comment_content": "只能满分了",
-            "comment_isuseful": 0
-        },
-        {
-            "book_id": "6518605",
-            "comment_id": "3678389545",
-            "comment_username": "笑脸",
-            "comment_timestamp": 1675420298,
-            "comment_location": "北京",
-            "comment_rating": 5,
-            "comment_content": "脑洞很大，力荐。\n人多渺小，作者带你贯穿宇宙纪元。\n提升宇宙观的佳作。",
-            "comment_isuseful": 0
-        },
-        {
-            "book_id": "6518605",
-            "comment_id": "3678221270",
-            "comment_username": "罗伯斯庇尔",
-            "comment_timestamp": 1675410677,
-            "comment_location": "天津",
-            "comment_rating": 1,
-            "comment_content": "随着年龄的增长，我越来越厌恶这本书",
-            "comment_isuseful": 0
-        },
-        {
-            "book_id": "6518605",
-            "comment_id": "3678104235",
-            "comment_username": "喏，次饼干",
-            "comment_timestamp": 1675403789,
-            "comment_location": "江苏",
-            "comment_rating": 5,
-            "comment_content": "不管在哪，人性都不会让人失望\n宇宙如此宏大，我有个猜想，我们所说的神仙不就是高维度群体，因为高维度意味着拥有更多选择和干预事物的能力",
-            "comment_isuseful": 0
-        },
-        {
-            "book_id": "6518605",
-            "comment_id": "3678027580",
-            "comment_username": "小D发呆是常态",
-            "comment_timestamp": 1675399236,
-            "comment_location": "山东",
-            "comment_rating": 5,
-            "comment_content": "2022年底，三体电视剧开播之前看完了全三部，感觉今后每一次抬头看星空都仿佛看见命运的齿轮在暗夜里一直缓缓转动，从古到今从未停止过。",
-            "comment_isuseful": 0
-        }]'''
             movie_data = crawler(movie_id)
             name = movie_data[0]["film_name"]
             with open(f"{DATA_DIR}/movie/comment/{movie_id}.json","w") as f:
@@ -169,13 +100,42 @@ async def show_analysis(request):
     name = request.args.get("name")
     if not item_id or mode not in ['movie', 'book']:
         return "参数错误", 400
+    clean_old_files(mode = mode)
     generate_visuals(mode, item_id)
     package_results(mode, item_id)
-    clean_old_files(mode = mode)
     return await response.file(
+
         os.path.join(CURRENT_DIR, "templates", "show.html")
     )
 
+@app.post("/update/<mode>/<the_type>")
+async def update_files(request,mode,the_type):
+    if mode not in ['movie', 'book']:
+        raise SanicException("无效的模式", status_code=400)
+    
+    if 'file' not in request.files:
+        raise SanicException("未收到文件", status_code=400)
+    
+    uploaded_files = request.files.get('file')
+
+    the_file = uploaded_files
+    
+    # 检查文件大小
+    if len(the_file.name) > MAX_FILE_SIZE:
+        raise SanicException("文件过大，最大限制10MB", status_code=400)
+    
+    # 检查文件扩展名
+    if not the_file.name.endswith(".json"):
+        raise SanicException("不支持的文件类型", status_code=400)
+    
+    
+    with open(f"{DATA_DIR}/{mode}/{the_type}/{the_file.name}","wb") as f:
+        f.write(the_file.body)
+    
+    return response.json({
+        "success": True,
+        "message": f"文件 {the_file.name} 上传成功至 {mode}/{the_type}"
+    })
 
 @app.route('/download/<mode>/<item_id>/<name>')
 async def download(request, mode, item_id,name):
