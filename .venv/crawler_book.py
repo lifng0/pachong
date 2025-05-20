@@ -13,7 +13,7 @@ headers = {
 
 def book_crawler(book_id):
     base_url = f'https://book.douban.com/subject/{book_id}/reviews?start='
-    pages = 1
+    pages = 5
     comment_lib = []
     for page in range(pages):
         url = base_url + str(page * 20)
