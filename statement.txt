@@ -1,0 +1,10 @@
+json文件中存放字典数组
+{
+                    'film_name':电影名称,
+                    'comment_id':评论的编号,
+                    'comment_username':评论人名称,
+                    'comment_timestamp':评论的时间戳（可以存时间的，但是老师要求存这个）,
+                    'comment_rating':评论人对该电影的评分,
+                    'comment_content':评论内容,
+                    'comment_popular':评论的点赞数
+                }

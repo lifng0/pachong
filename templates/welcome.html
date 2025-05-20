@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>多维分析系统</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            transition: background 0.6s ease;
+        }
+
+        .background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            z-index: -1;
+        }
+
+        .background.active {
+            opacity: 1;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(20px);
+            opacity: 0;
+            animation: slideUp 0.8s ease forwards;
+        }
+
+        .mode-switcher {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 25px;
+            background: #f0f0f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-btn.active {
+            background: #007bff;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .mode-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 3px;
+            background: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active::after {
+            width: 100%;
+            left: 0;
+        }
+
+        .title {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            color: #333;
+            position: relative;
+            display: inline-block;
+        }
+
+        .title::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 3px;
+            background: #007bff;
+            margin: 1rem auto;
+            transition: all 0.3s ease;
+        }
+
+        .search-container {
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1.2rem;
+            border: 2px solid #ddd;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            transition: border-color 0.3s ease;
+            display: block;
+            box-sizing: border-box;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        button[type="button"] {
+            display: block;
+            width: 200px;
+            margin: 0 auto;
+            padding: 1rem;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        button[type="button"]:hover {
+            transform: scale(1.05);
+        }
+
+        .mode-content {
+            display: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s ease;
+        }
+
+        .mode-content.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @keyframes slideUp {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+
+        .status.error {
+            color: red;
+        }
+
+        .status.loading {
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="background movie-bg active"></div>
+    <div class="background book-bg"></div>
+
+    <div class="container">
+        <h1 class="title" id="pageTitle">影评分析系统</h1>
+
+        <div class="mode-switcher">
+            <button class="mode-btn active" data-mode="movie" onclick="switchMode('movie')">🎬 影评分析</button>
+            <button class="mode-btn" data-mode="book" onclick="switchMode('book')">📚 书评解析</button>
+        </div>
+
+        <!-- 两个 mode-content 都要存在 -->
+        <div class="mode-content movie active">
+            <div class="search-container">
+                <input type="text" class="search-input" id="searchInputMovie" placeholder="输入电影ID（如：123456）">
+            </div>
+        </div>
+
+        <div class="mode-content book">
+            <div class="search-container">
+                <input type="text" class="search-input" id="searchInputBook" placeholder="输入书籍ID（如：978123）">
+            </div>
+        </div>
+
+        <button type="button" onclick="startAnalysis()">开始智能分析</button>
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        let currentMode = 'movie';
+
+        function switchMode(mode) {
+            if (mode === currentMode) return;
+
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+
+            document.querySelectorAll('.background').forEach(bg => bg.classList.remove('active'));
+            document.querySelector(`.${mode}-bg`).classList.add('active');
+
+            document.querySelectorAll('.mode-content').forEach(content => content.classList.remove('active'));
+            document.querySelector(`.mode-content.${mode}`).classList.add('active');
+
+            const title = document.getElementById('pageTitle');
+            title.style.opacity = 0;
+            setTimeout(() => {
+                title.textContent = mode === 'movie' ? '影评分析系统' : '书评解析系统';
+                title.style.opacity = 1;
+            }, 300);
+
+            currentMode = mode;
+        }
+
+        async function startAnalysis() {
+            const id = currentMode === 'movie'
+                ? document.getElementById('searchInputMovie').value.trim()
+                : document.getElementById('searchInputBook').value.trim();
+
+            if (!id) {
+                showStatus('⚠️ 请输入有效的ID', 'error');
+                return;
+            }
+
+            if (currentMode === 'movie' && !/^\d+$/.test(id)) {
+                showStatus('❌ 电影ID必须为纯数字', 'error');
+                return;
+            }
+
+            if (currentMode === 'book' && !/^(?:\d{9}[\dXx]|\d{13})$/.test(id)) {
+                showStatus('❌ 书本ID格式不正确', 'error');
+                return;
+            }
+
+            showStatus('🔍 正在爬取数据...', 'loading');
+
+            try {
+                const processRes = await fetch(`/${currentMode}/process/${id}`, { method: 'POST' });
+                if (!processRes.ok) throw new Error('爬取失败');
+                data = await processRes.json()
+
+                showStatus('💡 正在进行情感分析...', 'loading');
+
+                const emotionRes = await fetch(`/${currentMode}/emotion/${id}`, { method: 'POST' });
+                if (!emotionRes.ok) throw new Error('情感分析失败');
+
+                window.location.href = `/show?id=${id}&mode=${currentMode}&name=${data.name}`;
+            } catch (err) {
+                showStatus(`❌ 失败: ${err.message}`, 'error');
+            }
+        }
+
+        function showStatus(msg, type) {
+            const status = document.getElementById('status');
+            status.textContent = msg;
+            status.className = `status ${type}`;
+        }
+    </script>
+</body>
+</html>
