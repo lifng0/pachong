@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>多维分析系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            transition: background 0.6s ease;
+        }
+
+        .background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            z-index: -1;
+        }
+
+        .background.active {
+            opacity: 1;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(20px);
+            opacity: 0;
+            animation: slideUp 0.8s ease forwards;
+        }
+
+        .mode-switcher {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 25px;
+            background: #f0f0f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-btn.active {
+            background: #007bff;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .mode-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 3px;
+            background: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active::after {
+            width: 100%;
+            left: 0;
+        }
+
+        .title {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            color: #333;
+            position: relative;
+            display: inline-block;
+        }
+
+        .title::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 3px;
+            background: #007bff;
+            margin: 1rem auto;
+            transition: all 0.3s ease;
+        }
+
+        .search-container {
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1.2rem;
+            border: 2px solid #ddd;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            transition: border-color 0.3s ease;
+            display: block;
+            box-sizing: border-box;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        button[type="button"] {
+            display: block;
+            width: 200px;
+            margin: 0 auto;
+            padding: 1rem;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        button[type="button"]:hover {
+            transform: scale(1.05);
+        }
+
+        .mode-content {
+            display: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s ease;
+        }
+
+        .mode-content.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @keyframes slideUp {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+
+        .status.error {
+            color: red;
+        }
+
+        .status.loading {
+            color: #007bff;
+        }
+
+        .drop-zone {
+            border: 2px dashed #9ca3af;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background-color: #f9fafb;
+            min-height: 100px;
+            transition: border-color 0.3s, background-color 0.3s;
+        }
+        .drop-zone.dragover {
+            border-color: #3b82f6;
+            background-color: #e6f0ff;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background-color: #e5e7eb;
+            border-radius: 0.25rem;
+            margin-top: 0.5rem;
+        }
+        .file-item button {
+            color: #ef4444;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="background movie-bg active"></div>
+    <div class="background book-bg"></div>
+
+    <div class="container">
+        <h1 class="title" id="pageTitle">影评解析系统</h1>
+
+        <div class="mode-switcher">
+            <button class="mode-btn active" data-mode="movie" onclick="switchMode('movie')">🎬 影评解析</button>
+            <button class="mode-btn" data-mode="book" onclick="switchMode('book')">📚 书评解析</button>
+        </div>
+
+        <!-- 两个 mode-content 都要存在 -->
+        <div class="mode-content movie active">
+            <div class="search-container">
+                <input type="text" class="search-input" id="searchInputMovie" placeholder="输入电影ID（如：123456）">
+            </div>
+        </div>
+
+        <div class="mode-content book">
+            <div class="search-container">
+                <input type="text" class="search-input" id="searchInputBook" placeholder="输入书籍ID（如：978123）">
+            </div>
+        </div>
+
+        <button type="button" onclick="startAnalysis()">开始智能分析</button>
+        <div id="status" class="status"></div>
+
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">评论文件 (Comment)</label>
+            <div id="commentDropZone" class="drop-zone">
+                <p class="text-gray-500 text-center">拖拽评论文件至此或点击选择</p>
+                <div id="commentFileList"></div>
+            </div>
+            <input id="commentInput" type="file" class="hidden">
+        </div>
+
+        <!-- Emotion 文件上传区域 -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">情感文件 (Emotion)</label>
+            <div id="emotionDropZone" class="drop-zone">
+                <p class="text-gray-500 text-center">拖拽情感文件至此或点击选择</p>
+                <div id="emotionFileList"></div>
+            </div>
+            <input id="emotionInput" type="file" class="hidden">
+        </div>
+
+        <div>
+            <button id="uploadSearchButton" type="button">上传并搜索</button>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'movie';
+        const commentFiles = [];
+        const emotionFiles = [];
+
+        function switchMode(mode) {
+            if (mode === currentMode) return;
+
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+
+            document.querySelectorAll('.background').forEach(bg => bg.classList.remove('active'));
+            document.querySelector(`.${mode}-bg`).classList.add('active');
+
+            document.querySelectorAll('.mode-content').forEach(content => content.classList.remove('active'));
+            document.querySelector(`.mode-content.${mode}`).classList.add('active');
+
+            const title = document.getElementById('pageTitle');
+            title.style.opacity = 0;
+            setTimeout(() => {
+                title.textContent = mode === 'movie' ? '影评解析系统' : '书评解析系统';
+                title.style.opacity = 1;
+            }, 300);
+
+            currentMode = mode;
+        }
+
+        async function startAnalysis() {
+            const id = currentMode === 'movie'
+                ? document.getElementById('searchInputMovie').value.trim()
+                : document.getElementById('searchInputBook').value.trim();
+
+            if (!id) {
+                showStatus('⚠️ 请输入有效的ID', 'error');
+                return;
+            }
+
+            if (currentMode === 'movie' && !/^\d+$/.test(id)) {
+                showStatus('❌ 电影ID必须为纯数字', 'error');
+                return;
+            }
+
+            if (currentMode === 'book' && !/^(?:\d{9}[\dXx]|\d{13})$/.test(id)) {
+                showStatus('❌ 书本ID格式不正确', 'error');
+                return;
+            }
+
+            showStatus('🔍 正在爬取数据...', 'loading');
+
+            try {
+                const processRes = await fetch(`/${currentMode}/process/${id}`, { method: 'POST' });
+                if (!processRes.ok) throw new Error('爬取失败');
+                data = await processRes.json()
+
+                showStatus('💡 正在进行情感分析...', 'loading');
+
+                const emotionRes = await fetch(`/${currentMode}/emotion/${id}`, { method: 'POST' });
+                if (!emotionRes.ok) throw new Error('情感分析失败');
+
+                window.location.href = `/show?id=${id}&mode=${currentMode}&name=${data.name}`;
+            } catch (err) {
+                showStatus(`❌ 失败: ${err.message}`, 'error');
+            }
+        }
+
+        function setupDropZone(dropZoneId, inputId, fileListId, fileArray) {
+            const dropZone = document.getElementById(dropZoneId);
+            const fileInput = document.getElementById(inputId);
+            const fileList = document.getElementById(fileListId);
+
+            // 拖拽事件
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                handleFiles(files, fileArray, fileList);
+            });
+
+            // 点击选择文件
+            dropZone.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', () => {
+                handleFiles(fileInput.files, fileArray, fileList);
+                fileInput.value = ''; // 清空输入
+            });
+        }
+
+        // 处理文件
+        function handleFiles(files, fileArray, fileList) {
+            Array.from(files).forEach(file => {
+                fileArray.push(file);
+                updateFileList(fileArray, fileList);
+            });
+        }
+
+        // 更新文件列表
+        function updateFileList(fileArray, fileList) {
+            fileList.innerHTML = '';
+            fileArray.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <span>${file.name}</span>
+                    <button onclick="removeFile(${index}, '${fileList.id}')">删除</button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        // 删除文件
+        window.removeFile = (index, fileListId) => {
+            const fileArray = fileListId === 'commentFileList' ? commentFiles : emotionFiles;
+            fileArray.splice(index, 1);
+            updateFileList(fileArray, document.getElementById(fileListId));
+        };
+
+        // 初始化拖拽区域
+        setupDropZone('commentDropZone', 'commentInput', 'commentFileList', commentFiles);
+        setupDropZone('emotionDropZone', 'emotionInput', 'emotionFileList', emotionFiles);
+
+        document.getElementById('uploadSearchButton').addEventListener('click', () => {
+            if (commentFiles.length === 0 || emotionFiles.length === 0) {
+                alert('请在两个区域各上传至少一个文件');
+                return;
+            }
+
+            const commentFileName = commentFiles[0].name.split('.')[0];
+            const emotionFileName = emotionFiles[0].name.split('.')[0];
+
+            if (commentFileName !== emotionFileName) {
+                alert('评论文件和情感文件名必须一致');
+                return;
+            }
+
+
+            const searchId = commentFileName;
+            const formDataComment = new FormData();
+            formDataComment.append('file', commentFiles[0]);
+
+            const formDataEmotion = new FormData();
+            formDataEmotion.append('file', emotionFiles[0]);
+
+            // 上传评论文件
+            fetch(`/update/${currentMode}/comment`, {
+                method: 'POST',
+                body: formDataComment
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) throw new Error(data.message || '评论文件上传失败');
+                // 上传情感文件
+                return fetch(`/update/${currentMode}/emotion`, {
+                    method: 'POST',
+                    body: formDataEmotion
+                });
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) throw new Error(data.message || '情感文件上传失败');
+                // 执行搜索
+
+                return fetch(`/${currentMode}/process/${commentFileName}`, { method: 'POST' });
+            })
+            
+            .then(response => response.json())
+            .then(data => {
+                var Name = data.name;
+                commentFiles.length = 0;
+                emotionFiles.length = 0;
+                updateFileList(commentFiles, document.getElementById('commentFileList'));
+                updateFileList(emotionFiles, document.getElementById('emotionFileList'));
+                window.location.href = `/show?id=${commentFileName}&mode=${currentMode}&name=${Name}`;
+            })
+            .catch(error => {
+                alert('操作失败: ' + error.message);
+            });
+        });
+
+        function showStatus(msg, type) {
+            const status = document.getElementById('status');
+            status.textContent = msg;
+            status.className = `status ${type}`;
+        }
+    </script>
+</body>
+</html>
